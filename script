@@ -1,0 +1,33 @@
+#!/bin/bash
+
+# Comprobamos si se ha pasado una IP como argumento
+if [ -z "$1" ]; then
+    echo "Uso: $0 <direccion-ip>"
+    exit 1
+fi
+
+ip_address=$1
+
+# Realizamos un solo ping y extraemos el valor del TTL
+# Usamos grep para buscar "ttl=" y cut para quedarnos solo con el número
+ttl=$(ping -c 1 $ip_address | grep -oP 'ttl=\K\d+')
+
+# Si la variable ttl está vacía, la máquina no responde
+if [ -z "$ttl" ]; then
+    echo "Error: No se pudo obtener el TTL. ¿La IP $ip_address está activa?"
+    exit 1
+fi
+
+echo "IP: $ip_address | TTL: $ttl"
+
+# Lógica de identificación
+if [ "$ttl" -le 64 ]; then
+    echo "Resultado: Es una máquina Linux/Unix"
+elif [ "$ttl" -le 128 ]; then
+    echo "Resultado: Es una máquina Windows"
+else
+    echo "Resultado: Sistema operativo desconocido (TTL inusual: $ttl)"
+fi
+
+# Redirigimos posibles errores de red al "limbo" para que no ensucien la pantalla
+ttl=$(ping -c 1 $ip_address 2>/dev/null | grep -oP 'ttl=\K\d+')
